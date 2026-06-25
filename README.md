@@ -132,29 +132,11 @@ The implementation is designed around the following engineering goals:
 
 ## 4. Architecture
 
-```mermaid
-flowchart LR
-    DEV[Developer] -->|Push or Pull Request| GH[GitHub Repository]
+The following diagram shows the implemented HelloDeploy architecture, including the GitHub Actions CI/CD pipeline, immutable image publication to GHCR, staged deployment on AWS EC2, production approval, release verification, rollback controls, operational endpoints, security measures, and Terraform infrastructure representation.
 
-    GH --> QUALITY[GitHub-hosted Runner<br/>Lint, Tests, Compose Validation]
-    QUALITY --> TEST[GitHub-hosted Runner<br/>Build and Smoke Test]
-    TEST --> BUILD[Build Immutable Release Image]
-    BUILD --> GHCR[GitHub Container Registry<br/>Image tagged with Commit SHA]
+![HelloDeploy overall architecture](docs/hellodeploy-architecture.png)
 
-    GHCR --> RUNNER[Self-hosted GitHub Actions Runner<br/>AWS EC2]
-    RUNNER -->|SSH and SCP| HOST[AWS EC2 Deployment Host]
-
-    HOST --> STAGE[Staging Compose Project<br/>hello-staging<br/>Port 8080]
-    HOST --> PROD[Production Compose Project<br/>hello-production<br/>Port 80]
-
-    STAGE --> NGINX1[Nginx]
-    NGINX1 --> APP1[FastAPI Container]
-
-    PROD --> NGINX2[Nginx]
-    NGINX2 --> APP2[FastAPI Container]
-
-    USER[Browser or curl] -->|HTTP Port 80| PROD
-```
+> The same commit-SHA-tagged Docker image is built once, tested, published to GHCR, deployed to staging, verified, and then promoted unchanged to production. If a candidate deployment does not become healthy, the deployment script restores the previous release configuration and verifies the recovered service.
 
 ### Deployment environments
 
@@ -188,6 +170,8 @@ Deployment jobs execute on a Linux self-hosted runner installed on the EC2 host.
 │   ├── imports.tf
 │   ├── providers.tf
 │   └── versions.tf
+├── docs/
+│   └── hellodeploy-architecture.png
 ├── tests/
 │   └── test_app.py
 ├── .dockerignore
@@ -213,6 +197,7 @@ Deployment jobs execute on a Linux self-hosted runner installed on the EC2 host.
 | `deploy/nginx.conf` | Reverse proxy configuration |
 | `.github/workflows/pipeline.yml` | Complete CI/CD pipeline |
 | `infrastructure/` | Terraform configuration for the AWS EC2 instance |
+| `docs/hellodeploy-architecture.png` | Final system architecture diagram used in the project documentation |
 | `.env.example` | Example runtime configuration |
 | `.dockerignore` | Files excluded from Docker build context |
 | `.gitignore` | Local, secret, generated, and Terraform state exclusions |
