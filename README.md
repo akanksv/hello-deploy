@@ -6,6 +6,8 @@ A containerized **Hello World** web application with automated testing, immutabl
 
 ## Quick Links
 
+### Project Resources
+
 - [GitHub Repository](https://github.com/akanksv/hello-deploy)
 - [CI/CD Workflow](https://github.com/akanksv/hello-deploy/actions/workflows/pipeline.yml)
 - [Production Application](http://13.50.21.171)
@@ -13,17 +15,34 @@ A containerized **Hello World** web application with automated testing, immutabl
 - [Production Readiness](http://13.50.21.171/ready)
 - [Production Version](http://13.50.21.171/version)
 - [Production Metrics](http://13.50.21.171/metrics)
+
+### Documentation Navigation
+
+- [Verification Guide](#verification-guide)
+- [Project Overview](#project-overview)
+- [Engineering Goals](#engineering-goals)
+- [Technology Stack](#technology-stack)
 - [Architecture](#architecture)
-- [CI/CD Pipeline](#cicd-pipeline)
+- [Repository Structure](#repository-structure)
+- [Application Endpoints](#application-endpoints)
 - [Docker Setup](#docker-setup)
 - [Local Development](#local-development)
+- [Local Quality Checks](#local-quality-checks)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [GitHub Configuration](#github-configuration)
 - [Deployment](#deployment)
+- [Rollback Strategy](#rollback-strategy)
+- [Monitoring and Logging](#monitoring-and-logging)
 - [Infrastructure as Code](#infrastructure-as-code)
 - [Security Considerations](#security-considerations)
 - [Troubleshooting](#troubleshooting)
+- [Operational Commands](#operational-commands)
 - [Technical Implementation Summary](#technical-implementation-summary)
+- [Conclusion](#conclusion)
 
 > The production links are available only while the AWS EC2 instance is running.
+
+<a id="verification-guide"></a>
 
 ## Verification Guide
 
@@ -38,6 +57,8 @@ The project can be reviewed without access to private AWS or GitHub credentials.
 The internal staging service, AWS account, SSH credentials, GitHub environment secrets, and Terraform state are intentionally not public.
 
 ---
+
+<a id="project-overview"></a>
 
 ## 1. Project Overview
 
@@ -66,6 +87,8 @@ https://github.com/akanksv/hello-deploy
 
 ---
 
+<a id="engineering-goals"></a>
+
 ## 2. Engineering Goals
 
 The implementation is designed around the following engineering goals:
@@ -82,6 +105,8 @@ The implementation is designed around the following engineering goals:
 10. Provide observable health and metrics endpoints.
 
 ---
+
+<a id="technology-stack"></a>
 
 ## 3. Technology Stack
 
@@ -102,6 +127,8 @@ The implementation is designed around the following engineering goals:
 | Version identification | Git commit SHA |
 
 ---
+
+<a id="architecture"></a>
 
 ## 4. Architecture
 
@@ -139,6 +166,8 @@ flowchart LR
 Deployment jobs execute on a Linux self-hosted runner installed on the EC2 host. The release procedure still uses SSH and SCP, which keeps deployment responsibilities explicit and preserves the same deployment contract if the runner and target host are separated in a future architecture.
 
 ---
+
+<a id="repository-structure"></a>
 
 ## 5. Repository Structure
 
@@ -190,6 +219,8 @@ Deployment jobs execute on a Linux self-hosted runner installed on the EC2 host.
 
 ---
 
+<a id="application-endpoints"></a>
+
 ## 6. Application Endpoints
 
 | Endpoint | Purpose | Expected result |
@@ -212,6 +243,8 @@ curl --fail http://13.50.21.171/metrics
 The `version` field is injected into the image at build time and is used by the pipeline to prove that the expected commit was deployed.
 
 ---
+
+<a id="docker-setup"></a>
 
 ## 7. Docker Setup
 
@@ -261,6 +294,8 @@ Important production characteristics:
 Both services communicate through a dedicated bridge network named `application`.
 
 ---
+
+<a id="local-development"></a>
 
 ## 8. Local Development
 
@@ -323,6 +358,8 @@ docker compose -f compose.yml -f compose.local.yml down
 
 ---
 
+<a id="local-quality-checks"></a>
+
 ## 9. Local Quality Checks
 
 ```bash
@@ -359,6 +396,8 @@ docker compose -f compose.yml -f compose.local.yml config --quiet
 ```
 
 ---
+
+<a id="cicd-pipeline"></a>
 
 ## 10. CI/CD Pipeline
 
@@ -428,6 +467,8 @@ Workflow concurrency prevents uncontrolled parallel execution for the same Git r
 
 ---
 
+<a id="github-configuration"></a>
+
 ## 11. GitHub Configuration
 
 ### Environments
@@ -462,6 +503,8 @@ Workflow concurrency prevents uncontrolled parallel execution for the same Git r
 The loopback addresses are intentional. The self-hosted runner is installed on the EC2 host, so verification is independent of the developer's router, location, or public IP.
 
 ---
+
+<a id="deployment"></a>
 
 ## 12. Deployment
 
@@ -507,6 +550,8 @@ Port `8080` is intentionally not publicly exposed.
 
 ---
 
+<a id="rollback-strategy"></a>
+
 ## 13. Rollback Strategy
 
 Rollback logic is implemented in `deploy/deploy.sh`.
@@ -532,6 +577,8 @@ FORCE_UNHEALTHY=false
 Production always uses `FORCE_UNHEALTHY=false`.
 
 ---
+
+<a id="monitoring-and-logging"></a>
 
 ## 14. Monitoring and Logging
 
@@ -561,6 +608,8 @@ docker compose \
 ```
 
 ---
+
+<a id="infrastructure-as-code"></a>
 
 ## 15. Infrastructure as Code
 
@@ -610,6 +659,8 @@ For collaborative or long-lived operation, the state should be migrated to a sec
 
 ---
 
+<a id="security-considerations"></a>
+
 ## 16. Security Considerations
 
 ### Implemented controls
@@ -641,6 +692,8 @@ For collaborative or long-lived operation, the state should be migrated to a sec
 7. **No high availability:** There is no load balancer, auto scaling, or multi-zone redundancy.
 
 ---
+
+<a id="troubleshooting"></a>
 
 ## 17. Troubleshooting
 
@@ -689,6 +742,8 @@ Do not apply the plan. Confirm the active AWS account, region, state file, and c
 
 ---
 
+<a id="operational-commands"></a>
+
 ## 18. Operational Commands
 
 ### Production checks from an external machine
@@ -730,6 +785,8 @@ When the EC2 instance is stopped, the application, staging environment, and self
 
 ---
 
+<a id="technical-implementation-summary"></a>
+
 ## 19. Technical Implementation Summary
 
 | Technical area | Implementation |
@@ -755,6 +812,8 @@ When the EC2 instance is stopped, the application, staging environment, and self
 | Operational diagnosis | The documentation includes failure symptoms, likely causes, verification commands, and recovery actions |
 
 ---
+
+<a id="conclusion"></a>
 
 ## 20. Conclusion
 
