@@ -18,7 +18,7 @@ A containerized **Hello World** web application with automated testing, immutabl
 
 ### Documentation Navigation
 
-- [Verification Guide](#verification-guide)
+- [Verification Procedure](#verification-procedure)
 - [Project Overview](#project-overview)
 - [Engineering Goals](#engineering-goals)
 - [Technology Stack](#technology-stack)
@@ -42,17 +42,17 @@ A containerized **Hello World** web application with automated testing, immutabl
 
 > The production links are available only while the AWS EC2 instance is running.
 
-<a id="verification-guide"></a>
+<a id="verification-procedure"></a>
 
-## Verification Guide
+## Verification Procedure
 
-The project can be reviewed without access to private AWS or GitHub credentials.
+The project can be assessed without access to private AWS or GitHub credentials.
 
-1. Open the [CI/CD workflow history](https://github.com/akanksv/hello-deploy/actions/workflows/pipeline.yml) and inspect a successful run on `main`.
-2. Confirm that linting, testing, container validation, image publication, staging deployment, and production deployment completed successfully.
-3. Open the [production health endpoint](http://13.50.21.171/health) and confirm that it reports `healthy`.
-4. Open the [production version endpoint](http://13.50.21.171/version) and confirm that the environment is `production` and that the reported version is a Git commit SHA.
-5. Use the [Local Development](#local-development) section to build and run the application independently.
+1. The [CI/CD workflow history](https://github.com/akanksv/hello-deploy/actions/workflows/pipeline.yml) provides records of successful runs on `main`.
+2. A successful run includes completed linting, testing, container validation, image publication, staging deployment, and production deployment stages.
+3. The [production health endpoint](http://13.50.21.171/health) is expected to report `healthy`.
+4. The [production version endpoint](http://13.50.21.171/version) is expected to report the `production` environment and a Git commit SHA.
+5. Independent local execution is documented in the [Local Development](#local-development) section.
 
 The internal staging service, AWS account, SSH credentials, GitHub environment secrets, and Terraform state are intentionally not public.
 
@@ -492,7 +492,7 @@ Workflow concurrency prevents uncontrolled parallel execution for the same Git r
 | Variable | Value or purpose |
 |---|---|
 | `APPLICATION_URL` | `http://127.0.0.1:8080` |
-| `FORCE_UNHEALTHY` | Normally `false`; may be set to `true` for rollback demonstration |
+| `FORCE_UNHEALTHY` | `false` during normal operation; `true` enables controlled rollback testing |
 
 #### Production
 
@@ -510,16 +510,16 @@ The loopback addresses are intentional. The self-hosted runner is installed on t
 
 ### Normal deployment process
 
-1. Develop a change on a feature branch.
-2. Open a pull request.
-3. Wait for linting, tests, Compose validation, and container smoke testing.
-4. Review and merge into `main`.
-5. Build and publish a release image tagged with the merge commit SHA.
-6. Deploy the image to staging.
-7. Verify staging health and commit identity.
-8. Approve production when environment protection is enabled.
-9. Deploy the same image to production.
-10. Verify production health and commit identity.
+1. A change is developed on a feature branch.
+2. A pull request is opened for review.
+3. Linting, tests, Compose validation, and container smoke testing are executed automatically.
+4. Following review, the change is merged into `main`.
+5. A release image is built and published with the merge commit SHA as its tag.
+6. The image is deployed to staging.
+7. Staging health and commit identity are verified.
+8. Production approval is requested when environment protection is enabled.
+9. The same immutable image is deployed to production.
+10. Production health and commit identity are verified.
 
 ### Deployment directories
 
@@ -560,15 +560,15 @@ Before deployment, the current `.env` file is copied to `.env.previous`. The scr
 
 If the candidate remains unhealthy, the script restores `.env.previous`, recreates the previous release, verifies its health, and returns a failure status so the pipeline records the failed candidate deployment.
 
-### Rollback demonstration
+### Rollback test mechanism
 
-Set the staging environment variable to:
+Controlled rollback testing is supported in the staging environment through:
 
 ```text
 FORCE_UNHEALTHY=true
 ```
 
-The candidate health endpoint returns HTTP `503`, causing the script to attempt restoration of the previous healthy release. After the demonstration, reset the variable to:
+With this value enabled, the candidate health endpoint returns HTTP `503`, causing the deployment script to attempt restoration of the previous healthy release. Normal staging operation uses:
 
 ```text
 FORCE_UNHEALTHY=false
@@ -645,7 +645,7 @@ terraform validate
 terraform plan
 ```
 
-Apply only after reviewing the plan:
+Infrastructure changes are applied only after the Terraform plan has been reviewed:
 
 ```bash
 terraform apply
@@ -699,11 +699,11 @@ For collaborative or long-lived operation, the state should be migrated to a sec
 
 ### Workflow waits for a self-hosted runner
 
-The EC2 instance or runner is offline. Start the instance and confirm the Linux x64 runner is online under **Settings → Actions → Runners**.
+This condition indicates that the EC2 instance or runner is offline. The EC2 instance must be running, and the Linux x64 runner status must appear as online under **Settings → Actions → Runners**.
 
 ### Staging reports the production environment
 
-Set:
+The required environment-specific values are:
 
 ```text
 staging APPLICATION_URL = http://127.0.0.1:8080
@@ -712,7 +712,7 @@ production APPLICATION_URL = http://127.0.0.1:80
 
 ### External access to port 8080 fails
 
-This is expected. Staging is internal. Test it on the EC2 host:
+This is the expected behavior because staging is internal. Staging verification is performed on the EC2 host:
 
 ```bash
 curl --fail http://127.0.0.1:8080/health
@@ -720,25 +720,25 @@ curl --fail http://127.0.0.1:8080/health
 
 ### Version verification fails
 
-Check `/version`, the image tag in `.env`, and the running container image:
+Relevant diagnostic information includes the `/version` response, the image tag in `.env`, and the running container image:
 
 ```bash
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
 ```
 
-Confirm that each environment uses the correct `APPLICATION_URL`.
+Each environment must reference the correct `APPLICATION_URL`.
 
 ### SSH connection fails
 
-Check `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`, EC2 status, the security group, and the SSH service.
+Relevant checks include `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`, EC2 instance status, security-group rules, and SSH service availability.
 
 ### Candidate release is unhealthy
 
-Review Compose logs, confirm image availability and variables, check `/health`, and verify whether the rollback restored the previous image.
+Diagnostic sources include Docker Compose logs, image availability, deployment variables, the `/health` response, and the status of the previous release after rollback.
 
 ### Terraform reports unexpected changes
 
-Do not apply the plan. Confirm the active AWS account, region, state file, and configuration, then compare the proposed changes with the intended infrastructure. Back up state before any state repair or reconciliation.
+The plan should not be applied until the active AWS account, region, state file, and configuration have been verified and the proposed changes have been compared with the intended infrastructure. Terraform state must be backed up before any repair or reconciliation operation.
 
 ---
 
@@ -787,7 +787,7 @@ When the EC2 instance is stopped, the application, staging environment, and self
 
 <a id="technical-implementation-summary"></a>
 
-## 19. Technical Implementation Summary
+## 19. Technical Implementation (Summary)
 
 | Technical area | Implementation |
 |---|---|
