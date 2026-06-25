@@ -21,9 +21,21 @@ A containerized **Hello World** web application with automated testing, immutabl
 - [Infrastructure as Code](#infrastructure-as-code)
 - [Security Considerations](#security-considerations)
 - [Troubleshooting](#troubleshooting)
-- [Implementation Coverage](#implementation-coverage)
+- [Technical Implementation Summary](#technical-implementation-summary)
 
 > The production links are available only while the AWS EC2 instance is running.
+
+## Verification Guide
+
+The project can be reviewed without access to private AWS or GitHub credentials.
+
+1. Open the [CI/CD workflow history](https://github.com/akanksv/hello-deploy/actions/workflows/pipeline.yml) and inspect a successful run on `main`.
+2. Confirm that linting, testing, container validation, image publication, staging deployment, and production deployment completed successfully.
+3. Open the [production health endpoint](http://13.50.21.171/health) and confirm that it reports `healthy`.
+4. Open the [production version endpoint](http://13.50.21.171/version) and confirm that the environment is `production` and that the reported version is a Git commit SHA.
+5. Use the [Local Development](#local-development) section to build and run the application independently.
+
+The internal staging service, AWS account, SSH credentials, GitHub environment secrets, and Terraform state are intentionally not public.
 
 ---
 
@@ -276,7 +288,10 @@ Copy-Item .env.example .env
 ### Start locally
 
 ```bash
-docker compose   -f compose.yml   -f compose.local.yml   up --build --detach
+docker compose \
+  -f compose.yml \
+  -f compose.local.yml \
+  up --build --detach
 ```
 
 The application is then available at:
@@ -314,13 +329,19 @@ docker compose -f compose.yml -f compose.local.yml down
 python -m venv .venv
 ```
 
-Bash or Git Bash:
+Linux or macOS Bash:
 
 ```bash
 source .venv/bin/activate
 ```
 
-PowerShell:
+Windows Git Bash:
+
+```bash
+source .venv/Scripts/activate
+```
+
+Windows PowerShell:
 
 ```powershell
 .venv\Scripts\Activate.ps1
@@ -352,10 +373,10 @@ The workflow is defined in:
 The workflow runs on:
 
 - Every pull request
-- Every push to `main`
+- Pushes to `main`, except changes limited to Markdown files or the `docs/` directory
 - Manual execution through `workflow_dispatch`
 
-Pull requests perform validation and container testing but do not publish or deploy release images.
+Pull requests perform validation and container testing but do not publish or deploy release images. A commit that changes both documentation and application or deployment files still starts the complete pipeline.
 
 ### Pipeline stages
 
@@ -526,11 +547,17 @@ Production always uses `FORCE_UNHEALTHY=false`.
 Example log commands:
 
 ```bash
-docker compose   --project-name hello-staging   --file /opt/hello-deploy/staging/compose.yml   logs --tail=100
+docker compose \
+  --project-name hello-staging \
+  --file /opt/hello-deploy/staging/compose.yml \
+  logs --tail=100
 ```
 
 ```bash
-docker compose   --project-name hello-production   --file /opt/hello-deploy/production/compose.yml   logs --tail=100
+docker compose \
+  --project-name hello-production \
+  --file /opt/hello-deploy/production/compose.yml \
+  logs --tail=100
 ```
 
 ---
@@ -703,9 +730,9 @@ When the EC2 instance is stopped, the application, staging environment, and self
 
 ---
 
-## 19. Project Requirements and Corresponding Implementation
+## 19. Technical Implementation Summary
 
-| Capability area | Corresponding implementation |
+| Technical area | Implementation |
 |---|---|
 | Delivery architecture | GitHub Actions, GitHub Container Registry, AWS EC2, and distinct staging and production release paths |
 | Container image construction | Multi-stage Python image with a non-root runtime user and embedded release metadata |
